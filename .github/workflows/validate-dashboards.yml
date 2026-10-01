@@ -27,10 +27,18 @@ jobs:
           echo "Grafana Dashboard Validation"
           echo "========================================"
 
+          # Check if dashboards directory exists
+          if [ ! -d "dashboards" ]; then
+            echo "No dashboards directory found."
+            echo "Dashboard files may have been deleted."
+            exit 0
+          fi
+
           files=$(find dashboards -type f -name "*.json")
 
           if [ -z "$files" ]; then
             echo "No dashboard JSON files found."
+            echo "No JSON files require validation."
             exit 0
           fi
 
