@@ -1,0 +1,112 @@
+name: Validate Grafana Dashboards
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "dashboards/**/*.json"
+
+jobs:
+  validate-dashboards:
+    name: Validate Dashboard JSON
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Validate dashboards
+      - name: Validate Grafana dashboards
+        shell: bash
+        run: |
+          set -e
+
+          echo "========================================"
+          echo "Grafana Dashboard Validation"
+          echo "========================================"
+
+          files=$(find dashboards -type f -name "*.json")
+
+          if [ -z "$files" ]; then
+            echo "No dashboard JSON files found."
+            exit 0
+          fi
+
+          for file in $files; do
+
+            echo ""
+            echo "----------------------------------------"
+            echo "Validating: $file"
+            echo "----------------------------------------"
+
+            # ========================================
+            # 1. JSON Syntax Validation
+            # ========================================
+            echo "1. Checking JSON syntax..."
+
+            if ! jq empty "$file"; then
+              echo "❌ Invalid JSON: $file"
+              exit 1
+            fi
+
+            echo "✅ JSON syntax is valid"
+
+
+            # ========================================
+            # 2. Dashboard Title Validation
+            # ========================================
+            echo "2. Checking dashboard title..."
+
+            title=$(jq -r '.title // empty' "$file")
+
+            if [ -z "$title" ]; then
+              echo "❌ Dashboard title is missing or empty"
+              echo "   File: $file"
+              exit 1
+            fi
+
+            echo "✅ Dashboard title: $title"
+
+
+            # ========================================
+            # 3. Duplicate Panel ID Validation
+            # ========================================
+            echo "3. Checking duplicate panel IDs..."
+
+            duplicate_ids=$(jq -r '
+              [
+                .. | objects
+                | select(
+                    has("id")
+                    and has("type")
+                  )
+                | .id
+              ]
+              | group_by(.)
+              | map(select(length > 1) | .[0])
+              | .[]
+            ' "$file")
+
+            if [ -n "$duplicate_ids" ]; then
+              echo "❌ Duplicate panel ID(s) found:"
+
+              echo "$duplicate_ids" | while read -r id; do
+                echo "   Panel ID: $id"
+              done
+
+              exit 1
+            fi
+
+            echo "✅ No duplicate panel IDs found"
+
+            echo ""
+            echo "✅ Validation passed: $file"
+
+          done
+
+          echo ""
+          echo "========================================"
+          echo "✅ All Grafana dashboard validations passed"
+          echo "========================================"
