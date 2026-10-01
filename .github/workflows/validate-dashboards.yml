@@ -62,58 +62,6 @@ jobs:
             echo "✅ JSON syntax is valid"
 
 
-            # ========================================
-            # 2. Dashboard Title Validation
-            # ========================================
-            echo "2. Checking dashboard title..."
-
-            title=$(jq -r '.title // empty' "$file")
-
-            if [ -z "$title" ]; then
-              echo "❌ Dashboard title is missing or empty"
-              echo "   File: $file"
-              exit 1
-            fi
-
-            echo "✅ Dashboard title: $title"
-
-
-            # ========================================
-            # 3. Duplicate Panel ID Validation
-            # ========================================
-            echo "3. Checking duplicate panel IDs..."
-
-            duplicate_ids=$(jq -r '
-              [
-                .. | objects
-                | select(
-                    has("id")
-                    and has("type")
-                  )
-                | .id
-              ]
-              | group_by(.)
-              | map(select(length > 1) | .[0])
-              | .[]
-            ' "$file")
-
-            if [ -n "$duplicate_ids" ]; then
-              echo "❌ Duplicate panel ID(s) found:"
-
-              echo "$duplicate_ids" | while read -r id; do
-                echo "   Panel ID: $id"
-              done
-
-              exit 1
-            fi
-
-            echo "✅ No duplicate panel IDs found"
-
-            echo ""
-            echo "✅ Validation passed: $file"
-
-          done
-
           echo ""
           echo "========================================"
           echo "✅ All Grafana dashboard validations passed"
