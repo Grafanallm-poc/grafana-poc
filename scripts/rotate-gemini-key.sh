@@ -10,7 +10,8 @@
 #   If you omit the argument, you'll be prompted with hidden input instead — safer,
 #   since a key passed as an argument lands in your local shell history.
 #
-# Required environment variables:
+# Required environment variables (see .env.local — copy from .env.local.example;
+# it's auto-sourced below and .gitignored, so these never need exporting by hand):
 #   EC2_SSH_KEY_PATH   path to the .pem file for the EC2 instance
 #   GITHUB_TOKEN       a GitHub PAT with repo + actions:write scope, to update the
 #                       Actions secret. If unset, that step is skipped with a warning.
@@ -25,6 +26,14 @@
 # a scoped environment variable to the one process that needs it.
 
 set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -f "$REPO_ROOT/.env.local" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$REPO_ROOT/.env.local"
+  set +a
+fi
 
 EC2_HOST="${EC2_HOST:-ubuntu@ec2-3-108-197-35.ap-south-1.compute.amazonaws.com}"
 GITHUB_REPO="${GITHUB_REPO:-Grafanallm-poc/grafana-poc}"
