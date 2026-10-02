@@ -12,11 +12,14 @@ An LLM-powered agent (`agent/`) that turns a plain-English request like:
 
 into a standard monitoring dashboard, via:
 
-1. **Spec extraction** — Claude's structured output (`messages.parse` against the
-   `PartnerSpec` Pydantic model, `agent/schema.py`) turns the request into a typed
-   spec, using a versioned prompt (`agent/prompts/system_prompt.v1.md`). Defaults to
-   `claude-opus-5-5`; override with `ANTHROPIC_MODEL` (e.g. `claude-haiku-4-5` for a
-   cheaper/faster extraction model).
+1. **Spec extraction** — Gemini's structured JSON output (`response_json_schema`,
+   via the free-tier Gemini API) turns the request into a typed `PartnerSpec`
+   (`agent/schema.py`), using a versioned prompt (`agent/prompts/system_prompt.v1.md`).
+   Defaults to `gemini-3.5-flash`; override with `GEMINI_MODEL`. The free tier returns
+   intermittent `503`s under shared load — `spec_extractor.py` retries a few times with
+   backoff, but if you see onboarding fail with a 503 after retries, it's Gemini
+   capacity, not a bug; a paid key (or any paid LLM tier) would be far more reliable
+   for a real demo.
 2. **Template render** — `agent/dashboard_renderer.py` builds the standard SSP/DSP
    dashboard JSON (same panel set for every partner: QPS, latency, 2XX/5XX, timeouts,
    system load), in this repo's Git Sync dashboard format.
@@ -46,7 +49,7 @@ into a standard monitoring dashboard, via:
 ### Running it
 
 ```bash
-cp .env.example .env   # fill in ANTHROPIC_API_KEY, GITHUB_TOKEN, GITHUB_REPO at minimum
+cp .env.example .env   # fill in GEMINI_API_KEY, GITHUB_TOKEN, GITHUB_REPO at minimum
 cd docker
 docker compose up --build
 ```
@@ -62,6 +65,6 @@ added in Grafana (Connections > Data sources > Prometheus).
 ### Running the eval gate locally
 
 ```bash
-export ANTHROPIC_API_KEY=...
+export GEMINI_API_KEY=...
 python -m evals.run_eval
 ```

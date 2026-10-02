@@ -44,9 +44,9 @@ LLM_TOKENS = Counter(
     ["direction"],  # prompt | completion
 )
 
-# Claude Opus 5.5 pricing per 1M tokens by default; override via env if ANTHROPIC_MODEL changes.
-_PRICE_PROMPT_PER_1M = float(os.getenv("ANTHROPIC_PRICE_INPUT_PER_1M_USD", "4.00"))
-_PRICE_COMPLETION_PER_1M = float(os.getenv("ANTHROPIC_PRICE_OUTPUT_PER_1M_USD", "20.00"))
+# Defaults to $0 (Gemini free tier); set these if you move GEMINI_MODEL to a paid tier.
+_PRICE_PROMPT_PER_1M = float(os.getenv("GEMINI_PRICE_INPUT_PER_1M_USD", "0.0"))
+_PRICE_COMPLETION_PER_1M = float(os.getenv("GEMINI_PRICE_OUTPUT_PER_1M_USD", "0.0"))
 
 
 def estimate_cost_usd(prompt_tokens: int, completion_tokens: int) -> float:
