@@ -30,7 +30,7 @@ jobs:
 
       - name: Run eval suite
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python -m evals.run_eval
 
       - name: Upload eval results
