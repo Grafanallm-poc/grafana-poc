@@ -68,3 +68,18 @@ added in Grafana (Connections > Data sources > Prometheus).
 export GEMINI_API_KEY=...
 python -m evals.run_eval
 ```
+
+### Rotating GEMINI_API_KEY
+
+`scripts/rotate-gemini-key.sh` updates the key everywhere this deployment uses it —
+the live EC2 agent's `.env` (recreating the container, since a plain `docker restart`
+does not reload `--env-file`) and the `GEMINI_API_KEY` GitHub Actions secret:
+
+```bash
+export EC2_SSH_KEY_PATH=/path/to/your.pem
+export GITHUB_TOKEN=...   # PAT with repo + actions:write, to update the Actions secret
+./scripts/rotate-gemini-key.sh          # prompts for the new key (hidden input)
+./scripts/rotate-gemini-key.sh <newkey> # or pass it directly (lands in shell history)
+```
+
+Requires `python3` with `requests` and `pynacl` installed locally (`pip install requests pynacl`).
