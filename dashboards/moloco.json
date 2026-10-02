@@ -23,18 +23,11 @@
     },
     "panels": [
       {
-        "id": 1,
         "title": "Request Latency (alert p95 > 120.0ms)",
         "type": "timeseries",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
-        },
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 0
         },
         "fieldConfig": {
           "defaults": {
@@ -71,21 +64,21 @@
             "legendFormat": "p99",
             "refId": "C"
           }
-        ]
+        ],
+        "id": 1,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
       },
       {
-        "id": 2,
         "title": "5XX Error Rate",
         "type": "timeseries",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
-        },
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 12,
-          "y": 0
         },
         "fieldConfig": {
           "defaults": {
@@ -99,7 +92,192 @@
             "legendFormat": "5xx",
             "refId": "A"
           }
-        ]
+        ],
+        "id": 2,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "title": "Bid Rate",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(partner_bids_total{partner=\"moloco\"}[5m])) / sum(rate(partner_bid_requests_total{partner=\"moloco\"}[5m]))",
+            "legendFormat": "rate",
+            "refId": "A"
+          }
+        ],
+        "id": 3,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "title": "Win Rate",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(partner_auctions_won_total{partner=\"moloco\"}[5m])) / sum(rate(partner_bids_total{partner=\"moloco\"}[5m]))",
+            "legendFormat": "rate",
+            "refId": "A"
+          }
+        ],
+        "id": 4,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "title": "No-Bid Rate",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(partner_no_bids_total{partner=\"moloco\"}[5m])) / sum(rate(partner_bid_requests_total{partner=\"moloco\"}[5m]))",
+            "legendFormat": "rate",
+            "refId": "A"
+          },
+          {
+            "expr": "sum by (reason) (rate(partner_no_bids_total{partner=\"moloco\"}[5m]))",
+            "legendFormat": "{{reason}}",
+            "refId": "B"
+          }
+        ],
+        "id": 5,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "title": "Timeout-to-Bid Ratio",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(partner_timeouts_total{partner=\"moloco\"}[5m])) / sum(rate(partner_bids_total{partner=\"moloco\"}[5m]))",
+            "legendFormat": "rate",
+            "refId": "A"
+          }
+        ],
+        "id": 6,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      },
+      {
+        "title": "eCPM",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "partner_ecpm_usd{partner=\"moloco\"}",
+            "legendFormat": "eCPM",
+            "refId": "A"
+          }
+        ],
+        "id": 7,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        }
+      },
+      {
+        "title": "Spend vs Daily Budget",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(partner_spend_usd_total{partner=\"moloco\"})",
+            "legendFormat": "spend",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(partner_daily_budget_usd{partner=\"moloco\"})",
+            "legendFormat": "daily budget",
+            "refId": "B"
+          }
+        ],
+        "id": 8,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        }
       }
     ],
     "templating": {
