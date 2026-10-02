@@ -14,7 +14,7 @@ import time
 
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
-PARTNERS = [p.strip() for p in os.getenv("DUMMY_PARTNERS", "moloco").split(",") if p.strip()]
+PARTNERS = [p.strip() for p in os.getenv("DUMMY_PARTNERS", "moloco,talentica").split(",") if p.strip()]
 PORT = int(os.getenv("DUMMY_EXPORTER_PORT", "9091"))
 INTERVAL_SECONDS = float(os.getenv("DUMMY_INTERVAL_SECONDS", "5"))
 
