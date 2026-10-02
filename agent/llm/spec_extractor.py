@@ -17,13 +17,13 @@ from google.genai import errors as genai_errors
 from google.genai import types
 
 from agent.observability import traced_llm_call
-from agent.schema import PartnerSpec
+from agent.schema import Metric, PartnerSpec
 
 PROMPT_DIR = Path(__file__).resolve().parent.parent / "prompts"
-ACTIVE_PROMPT_VERSION = os.getenv("AGENT_PROMPT_VERSION", "v1")
+ACTIVE_PROMPT_VERSION = os.getenv("AGENT_PROMPT_VERSION", "v2")
 MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 
-_METRIC_ENUM = ["latency", "success_2xx", "error_5xx", "qps", "timeouts", "system_load"]
+_METRIC_ENUM = [m.value for m in Metric]
 
 _RESPONSE_SCHEMA = {
     "type": "object",

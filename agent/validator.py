@@ -18,7 +18,11 @@ from pathlib import Path
 import yaml
 
 _CATALOG_PATH = Path(__file__).resolve().parent / "metric_catalog.yaml"
-_METRIC_NAME_RE = re.compile(r"\b([a-zA-Z_:][a-zA-Z0-9_:]*)\s*(?:\{|\[|\)|\s|$)")
+# Only matches an identifier immediately preceding `{` or `[` — i.e. an actual metric
+# reference (`partner_requests_total{...}`), not a label name inside a `by (...)` /
+# `without (...)` grouping clause (e.g. the "reason" in `sum by (reason) (...)`), which
+# is followed by `)`, not `{`/`[`, and would otherwise look like a hallucinated metric.
+_METRIC_NAME_RE = re.compile(r"\b([a-zA-Z_:][a-zA-Z0-9_:]*)\s*(?:\{|\[)")
 
 
 @dataclass
@@ -29,7 +33,7 @@ class ValidationResult:
 
 def _load_catalog_metric_names() -> set[str]:
     catalog = yaml.safe_load(_CATALOG_PATH.read_text())
-    return {entry["promql_metric"] for entry in catalog["metrics"].values()}
+    return {name for entry in catalog["metrics"].values() for name in entry["promql_metrics"]}
 
 
 def check_json_valid(dashboard_json: str) -> ValidationResult:

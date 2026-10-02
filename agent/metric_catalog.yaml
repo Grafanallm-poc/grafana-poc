@@ -2,29 +2,90 @@
 # The validator rejects any generated query touching a metric not listed here, and the
 # eval harness uses this same file to score "hallucinated metric" rate.
 #
+# promql_metrics is a list because several business-layer metrics are ratios computed
+# from two or more underlying series (e.g. bid_rate = bids / bid_requests) — every raw
+# series a metric's panel(s) can reference must be listed.
+#
 # {partner} is substituted with the onboarded partner's slug at render time.
 metrics:
+  # --- infra/integration layer (both SSP and DSP) ---
   latency:
-    promql_metric: partner_request_duration_seconds_bucket
+    promql_metrics: [partner_request_duration_seconds_bucket]
     labels: ["partner"]
     description: Request latency histogram, seconds.
   success_2xx:
-    promql_metric: partner_requests_total
+    promql_metrics: [partner_requests_total]
     labels: ["partner", "status_class"]
     description: Total requests, filterable by status_class="2xx".
   error_5xx:
-    promql_metric: partner_requests_total
+    promql_metrics: [partner_requests_total]
     labels: ["partner", "status_class"]
     description: Total requests, filterable by status_class="5xx".
   qps:
-    promql_metric: partner_requests_total
+    promql_metrics: [partner_requests_total]
     labels: ["partner"]
     description: Request rate (derived via rate()).
   timeouts:
-    promql_metric: partner_timeouts_total
+    promql_metrics: [partner_timeouts_total]
     labels: ["partner"]
     description: Count of requests that timed out.
   system_load:
-    promql_metric: partner_system_load
+    promql_metrics: [partner_system_load]
     labels: ["partner"]
     description: Host/system load gauge for the partner's integration workers.
+
+  # --- DSP business layer ---
+  bid_rate:
+    promql_metrics: [partner_bid_requests_total, partner_bids_total]
+    labels: ["partner"]
+    description: Share of incoming bid requests the DSP actually bids on.
+  win_rate:
+    promql_metrics: [partner_bids_total, partner_auctions_won_total]
+    labels: ["partner"]
+    description: Share of bids that win the auction.
+  no_bid_rate:
+    promql_metrics: [partner_bid_requests_total, partner_no_bids_total]
+    labels: ["partner", "reason"]
+    description: Share of bid requests with no bid, broken down by reason.
+  spend_pacing:
+    promql_metrics: [partner_spend_usd_total, partner_daily_budget_usd]
+    labels: ["partner"]
+    description: Cumulative spend vs. daily budget target.
+  ecpm:
+    promql_metrics: [partner_ecpm_usd]
+    labels: ["partner"]
+    description: Effective CPM / average bid price.
+  timeout_to_bid_ratio:
+    promql_metrics: [partner_timeouts_total, partner_bids_total]
+    labels: ["partner"]
+    description: How often a timeout costs the DSP a bid opportunity.
+
+  # --- SSP business layer ---
+  fill_rate:
+    promql_metrics: [partner_ad_requests_total, partner_filled_requests_total]
+    labels: ["partner"]
+    description: Share of ad requests that get filled.
+  revenue_rpm:
+    promql_metrics: [partner_revenue_usd_total, partner_impressions_total]
+    labels: ["partner"]
+    description: Revenue per mille impressions.
+  demand_partner_breakdown:
+    promql_metrics:
+      - partner_demand_bid_requests_total
+      - partner_demand_bids_total
+      - partner_demand_timeouts_total
+      - partner_demand_latency_seconds_bucket
+    labels: ["partner", "demand_partner"]
+    description: Bid rate / timeout rate / latency sliced per demand-side (DSP) partner.
+  viewability_rate:
+    promql_metrics: [partner_viewable_impressions_total, partner_measured_impressions_total]
+    labels: ["partner"]
+    description: Share of measured impressions that were viewable.
+  render_rate:
+    promql_metrics: [partner_rendered_ads_total, partner_filled_requests_total]
+    labels: ["partner"]
+    description: Share of filled requests whose ad actually rendered.
+  ad_quality_issues:
+    promql_metrics: [partner_blocked_creatives_total]
+    labels: ["partner", "reason"]
+    description: Blocked/flagged creatives, broken down by reason (malware, policy, etc).

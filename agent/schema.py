@@ -11,12 +11,27 @@ class PartnerType(str, Enum):
 
 
 class Metric(str, Enum):
+    # Infra/integration layer — applies to both SSP and DSP
     LATENCY = "latency"
     SUCCESS_2XX = "success_2xx"
     ERROR_5XX = "error_5xx"
     QPS = "qps"
     TIMEOUTS = "timeouts"
     SYSTEM_LOAD = "system_load"
+    # DSP business layer
+    BID_RATE = "bid_rate"
+    WIN_RATE = "win_rate"
+    NO_BID_RATE = "no_bid_rate"
+    SPEND_PACING = "spend_pacing"
+    ECPM = "ecpm"
+    TIMEOUT_TO_BID_RATIO = "timeout_to_bid_ratio"
+    # SSP business layer
+    FILL_RATE = "fill_rate"
+    REVENUE_RPM = "revenue_rpm"
+    DEMAND_PARTNER_BREAKDOWN = "demand_partner_breakdown"
+    VIEWABILITY_RATE = "viewability_rate"
+    RENDER_RATE = "render_rate"
+    AD_QUALITY_ISSUES = "ad_quality_issues"
 
 
 class AlertOperator(str, Enum):
