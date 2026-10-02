@@ -1,0 +1,41 @@
+name: LLMOps Eval Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "agent/prompts/**"
+      - "agent/llm/**"
+      - "agent/schema.py"
+      - "agent/metric_catalog.yaml"
+      - "evals/**"
+
+jobs:
+  eval-gate:
+    name: Score prompt/model change against eval test set
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r agent/requirements.txt
+
+      - name: Run eval suite
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python -m evals.run_eval
+
+      - name: Upload eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: evals/results.json

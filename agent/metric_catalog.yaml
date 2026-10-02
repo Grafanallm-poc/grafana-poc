@@ -1,0 +1,30 @@
+# Ground-truth catalog of metrics the standard SSP/DSP template is allowed to reference.
+# The validator rejects any generated query touching a metric not listed here, and the
+# eval harness uses this same file to score "hallucinated metric" rate.
+#
+# {partner} is substituted with the onboarded partner's slug at render time.
+metrics:
+  latency:
+    promql_metric: partner_request_duration_seconds_bucket
+    labels: ["partner"]
+    description: Request latency histogram, seconds.
+  success_2xx:
+    promql_metric: partner_requests_total
+    labels: ["partner", "status_class"]
+    description: Total requests, filterable by status_class="2xx".
+  error_5xx:
+    promql_metric: partner_requests_total
+    labels: ["partner", "status_class"]
+    description: Total requests, filterable by status_class="5xx".
+  qps:
+    promql_metric: partner_requests_total
+    labels: ["partner"]
+    description: Request rate (derived via rate()).
+  timeouts:
+    promql_metric: partner_timeouts_total
+    labels: ["partner"]
+    description: Count of requests that timed out.
+  system_load:
+    promql_metric: partner_system_load
+    labels: ["partner"]
+    description: Host/system load gauge for the partner's integration workers.
