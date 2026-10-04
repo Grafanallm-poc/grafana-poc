@@ -1,0 +1,61 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "partner-dt5"
+  },
+  "spec": {
+    "title": "DSP Onboarding - DT5",
+    "description": "",
+    "editable": true,
+    "graphTooltip": 0,
+    "tags": [
+      "partner-onboarding",
+      "dsp",
+      "dt5"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "title": "Bid Rate",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(partner_bids_total{partner=\"dt5\"}[5m])) / sum(rate(partner_bid_requests_total{partner=\"dt5\"}[5m]))",
+            "legendFormat": "rate",
+            "refId": "A"
+          }
+        ],
+        "id": 1,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    }
+  }
+}
