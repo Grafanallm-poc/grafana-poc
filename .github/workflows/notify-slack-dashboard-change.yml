@@ -1,0 +1,26 @@
+name: Notify Slack - Dashboard Added/Removed
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "dashboards/**"
+
+jobs:
+  notify:
+    name: Announce dashboard changes to #dsp-ssp-dashboards
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect and announce dashboard changes
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.event.after }}
+        run: python3 .github/scripts/notify_dashboard_changes.py
