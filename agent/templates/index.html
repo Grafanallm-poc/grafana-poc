@@ -234,6 +234,117 @@
       height: 1px;
       background: var(--border);
     }
+
+    .examples {
+      margin-top: 2.25rem;
+    }
+
+    .examples > .section-label {
+      margin-bottom: 0.9rem;
+    }
+
+    .example-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .example-card-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .example-card-title {
+      font-family: 'Space Grotesk', 'Inter', sans-serif;
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: #f4f5f5;
+    }
+
+    .example-card-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .badge-both { background: rgba(255, 120, 10, 0.12); color: var(--accent); }
+    .badge-dsp { background: rgba(94, 161, 255, 0.12); color: #7bb3ff; }
+    .badge-ssp { background: rgba(108, 207, 142, 0.12); color: var(--green); }
+
+    .example-card-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin: 0 0 0.8rem;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .chip {
+      font-size: 0.75rem;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      padding: 0.25rem 0.65rem;
+      white-space: nowrap;
+    }
+
+    .example-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .example-prompt {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
+      color: var(--text-faint);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .use-example-btn {
+      flex-shrink: 0;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 0.35rem 0.8rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .use-example-btn:hover { background: var(--accent); color: #1a1105; }
+
+    .split-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 560px) {
+      .split-row { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -263,6 +374,77 @@
       </form>
     </div>
 
+    <div class="examples">
+      <div class="section-label">Available dashboard types</div>
+
+      <div class="example-card">
+        <div class="example-card-head">
+          <span class="example-card-title">1. Standard Monitoring</span>
+          <span class="example-card-badge badge-both">SSP + DSP</span>
+        </div>
+        <p class="example-card-desc">Applied automatically when no specific metrics are named in the request &mdash; the same 6 panels for either partner type.</p>
+        <div class="chip-row">
+          <span class="chip">Queries per Second</span>
+          <span class="chip">Request Latency (p50/p95/p99)</span>
+          <span class="chip">2XX Success Rate</span>
+          <span class="chip">5XX Error Rate</span>
+          <span class="chip">Timeouts</span>
+          <span class="chip">System Load</span>
+        </div>
+        <div class="example-card-footer">
+          <span class="example-prompt">&quot;Onboard DSP Moloco, standard monitoring.&quot;</span>
+          <button type="button" class="use-example-btn" data-prompt="Onboard DSP Moloco, standard monitoring.">Use this</button>
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div class="example-card-head">
+          <span class="example-card-title">2. Specific Monitoring</span>
+        </div>
+        <p class="example-card-desc">Opt-in only &mdash; name any of these explicitly in your request and they're added on top of (or instead of) the standard set.</p>
+
+        <div class="split-row">
+          <div>
+            <div class="example-card-head" style="margin-top:0;">
+              <span class="example-card-title" style="font-size:0.85rem;">DSP-specific</span>
+              <span class="example-card-badge badge-dsp">DSP only</span>
+            </div>
+            <div class="chip-row">
+              <span class="chip">Bid Rate</span>
+              <span class="chip">Win Rate</span>
+              <span class="chip">No-Bid Rate</span>
+              <span class="chip">Timeout-to-Bid Ratio</span>
+              <span class="chip">eCPM</span>
+              <span class="chip">Spend vs Daily Budget</span>
+            </div>
+            <div class="example-card-footer">
+              <span class="example-prompt">&quot;...track bid rate, win rate, eCPM.&quot;</span>
+              <button type="button" class="use-example-btn" data-prompt="Onboard DSP DT1, track bid rate, win rate, and eCPM.">Use this</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="example-card-head" style="margin-top:0;">
+              <span class="example-card-title" style="font-size:0.85rem;">SSP-specific</span>
+              <span class="example-card-badge badge-ssp">SSP only</span>
+            </div>
+            <div class="chip-row">
+              <span class="chip">Fill Rate</span>
+              <span class="chip">Revenue RPM</span>
+              <span class="chip">Viewability Rate</span>
+              <span class="chip">Render Rate</span>
+              <span class="chip">Demand-Partner Breakdown</span>
+              <span class="chip">Ad Quality Issues</span>
+            </div>
+            <div class="example-card-footer">
+              <span class="example-prompt">&quot;...track fill rate, revenue RPM.&quot;</span>
+              <button type="button" class="use-example-btn" data-prompt="Onboard SSP Adcolony, track fill rate, revenue RPM, and viewability rate.">Use this</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     {% if result %}
       {% if result.ok %}
         <div class="result ok">
@@ -289,5 +471,16 @@
       {% endif %}
     {% endif %}
   </main>
+
+  <script>
+    document.querySelectorAll('.use-example-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var ta = document.getElementById('request_text');
+        ta.value = btn.getAttribute('data-prompt');
+        ta.focus();
+        ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
+  </script>
 </body>
 </html>
