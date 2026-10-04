@@ -11,11 +11,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import urllib.request
 
 CHANNEL = "#dsp-ssp-dashboards"
 ZERO_SHA = "0" * 40
+_ONBOARDING_TITLE_RE = re.compile(r"^(SSP|DSP) Onboarding - (.+)$")
 
 
 def dashboard_title(ref: str, path: str) -> str:
@@ -28,6 +30,14 @@ def dashboard_title(ref: str, path: str) -> str:
         return spec.get("title", path)
     except Exception:
         return path
+
+
+def short_label(title: str) -> str:
+    """"DSP Onboarding - DT5" -> "DSP DT5"; anything else (hand-built dashboards
+    like the Kubernetes one) is left as-is.
+    """
+    m = _ONBOARDING_TITLE_RE.match(title)
+    return f"{m.group(1)} {m.group(2)}" if m else title
 
 
 def post_to_slack(text: str) -> None:
@@ -66,11 +76,11 @@ def main() -> None:
             continue
 
         if status == "A":
-            title = dashboard_title(after, path)
-            post_to_slack(f"Hi Team.\nNew Dashboard *{title}* is added in the Grafana,")
+            label = short_label(dashboard_title(after, path))
+            post_to_slack(f"Hi, New Dashboard for {label} is added on Grafana.")
         elif status == "D":
-            title = dashboard_title(before, path)
-            post_to_slack(f"Hi Team.\nDashboard *{title}* has been removed from Grafana.")
+            label = short_label(dashboard_title(before, path))
+            post_to_slack(f"Hi, Dashboard for {label} is removed from Grafana.")
 
 
 if __name__ == "__main__":
