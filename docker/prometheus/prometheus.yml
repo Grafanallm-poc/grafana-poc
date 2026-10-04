@@ -13,3 +13,9 @@ scrape_configs:
     static_configs:
       - targets:
           - agent:8000
+
+  - job_name: dummy-partner-metrics
+
+    static_configs:
+      - targets:
+          - dummy-exporter:9091

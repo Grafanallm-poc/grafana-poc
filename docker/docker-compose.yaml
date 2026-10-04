@@ -26,9 +26,21 @@ services:
 
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
 
     depends_on:
       - prometheus
+
+    networks:
+      - monitoring
+
+
+  dummy-exporter:
+    build:
+      context: ..
+      dockerfile: tools/dummy_exporter/Dockerfile
+    container_name: dummy-exporter
+    restart: unless-stopped
 
     networks:
       - monitoring
@@ -46,7 +58,7 @@ services:
 
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
       GEMINI_PRICE_INPUT_PER_1M_USD: ${GEMINI_PRICE_INPUT_PER_1M_USD:-0.0}
       GEMINI_PRICE_OUTPUT_PER_1M_USD: ${GEMINI_PRICE_OUTPUT_PER_1M_USD:-0.0}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
