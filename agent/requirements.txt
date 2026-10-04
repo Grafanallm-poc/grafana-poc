@@ -7,4 +7,4 @@ google-genai>=1.0.0
 requests==2.32.3
 pyyaml==6.0.2
 prometheus-client==0.21.0
-langfuse==2.53.9
+langfuse>=3.0.0

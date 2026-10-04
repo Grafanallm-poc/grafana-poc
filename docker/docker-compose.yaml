@@ -67,7 +67,7 @@ services:
       GRAFANA_PROMETHEUS_DS_UID: ${GRAFANA_PROMETHEUS_DS_UID:-prometheus}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
-      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://us.cloud.langfuse.com}
 
     depends_on:
       - prometheus

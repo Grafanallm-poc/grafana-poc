@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import os
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 
 from prometheus_client import Counter, Histogram
 
@@ -60,23 +60,24 @@ _langfuse_checked = False
 
 
 def _get_langfuse():
+    """Returns a Langfuse client (SDK v3+: get_client(), which reads
+    LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY / LANGFUSE_BASE_URL from the
+    environment) or None if credentials aren't configured. Note LANGFUSE_BASE_URL,
+    not the older LANGFUSE_HOST — the v2 SDK's Langfuse(...)/client.generation()
+    API is a different major version and does not work against current Langfuse
+    Cloud organizations.
+    """
     global _langfuse_client, _langfuse_checked
     if _langfuse_checked:
         return _langfuse_client
     _langfuse_checked = True
-    public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
-    secret_key = os.getenv("LANGFUSE_SECRET_KEY")
-    if not public_key or not secret_key:
+    if not os.getenv("LANGFUSE_PUBLIC_KEY") or not os.getenv("LANGFUSE_SECRET_KEY"):
         logger.warning("Langfuse keys not set; LLM calls will not be traced to Langfuse.")
         return None
     try:
-        from langfuse import Langfuse
+        from langfuse import get_client
 
-        _langfuse_client = Langfuse(
-            public_key=public_key,
-            secret_key=secret_key,
-            host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com"),
-        )
+        _langfuse_client = get_client()
     except Exception:  # pragma: no cover - optional dependency
         logger.exception("Failed to initialize Langfuse client; continuing without tracing.")
         _langfuse_client = None
@@ -100,32 +101,39 @@ def traced_llm_call(*, name: str, model: str, prompt_version: str, input_text: s
         result["prompt_tokens"] = prompt_tokens
         result["completion_tokens"] = completion_tokens
 
-    try:
-        yield record
-    finally:
-        duration = time.monotonic() - start
-        LLM_CALL_DURATION.observe(duration)
+    client = _get_langfuse()
+    span_cm = (
+        client.start_as_current_observation(
+            as_type="generation",
+            name=name,
+            model=model,
+            input=input_text,
+            metadata={"prompt_version": prompt_version},
+        )
+        if client is not None
+        else nullcontext(None)
+    )
 
-        prompt_tokens = result.get("prompt_tokens", 0)
-        completion_tokens = result.get("completion_tokens", 0)
-        if prompt_tokens or completion_tokens:
-            LLM_TOKENS.labels(direction="prompt").inc(prompt_tokens)
-            LLM_TOKENS.labels(direction="completion").inc(completion_tokens)
-            LLM_COST_USD.inc(estimate_cost_usd(prompt_tokens, completion_tokens))
+    with span_cm as generation:
+        try:
+            yield record
+        finally:
+            duration = time.monotonic() - start
+            LLM_CALL_DURATION.observe(duration)
 
-        client = _get_langfuse()
-        if client is not None:
-            try:
-                generation = client.generation(
-                    name=name,
-                    model=model,
-                    input=input_text,
-                    metadata={"prompt_version": prompt_version},
-                )
-                generation.end(
-                    output=result.get("output_text"),
-                    usage={"input": prompt_tokens, "output": completion_tokens, "unit": "TOKENS"},
-                )
-                client.flush()
-            except Exception:  # pragma: no cover - never let tracing break the agent
-                logger.exception("Langfuse trace failed")
+            prompt_tokens = result.get("prompt_tokens", 0)
+            completion_tokens = result.get("completion_tokens", 0)
+            if prompt_tokens or completion_tokens:
+                LLM_TOKENS.labels(direction="prompt").inc(prompt_tokens)
+                LLM_TOKENS.labels(direction="completion").inc(completion_tokens)
+                LLM_COST_USD.inc(estimate_cost_usd(prompt_tokens, completion_tokens))
+
+            if generation is not None:
+                try:
+                    generation.update(
+                        output=result.get("output_text"),
+                        usage_details={"input": prompt_tokens, "output": completion_tokens},
+                    )
+                    client.flush()
+                except Exception:  # pragma: no cover - never let tracing break the agent
+                    logger.exception("Langfuse trace update failed")
