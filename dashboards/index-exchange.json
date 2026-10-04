@@ -1,0 +1,211 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "partner-index-exchange"
+  },
+  "spec": {
+    "title": "SSP Onboarding - Index Exchange",
+    "description": "",
+    "editable": true,
+    "graphTooltip": 0,
+    "tags": [
+      "partner-onboarding",
+      "ssp",
+      "index-exchange"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "title": "Queries per Second",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(partner_requests_total{partner=\"index-exchange\"}[5m]))",
+            "legendFormat": "QPS",
+            "refId": "A"
+          }
+        ],
+        "id": 1,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "title": "Request Latency",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(partner_request_duration_seconds_bucket{partner=\"index-exchange\"}[5m])) by (le))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(partner_request_duration_seconds_bucket{partner=\"index-exchange\"}[5m])) by (le))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(partner_request_duration_seconds_bucket{partner=\"index-exchange\"}[5m])) by (le))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "id": 2,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "title": "2XX Success Rate",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(partner_requests_total{partner=\"index-exchange\", status_class=\"2xx\"}[5m]))",
+            "legendFormat": "2xx",
+            "refId": "A"
+          }
+        ],
+        "id": 3,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "title": "5XX Error Rate",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(partner_requests_total{partner=\"index-exchange\", status_class=\"5xx\"}[5m]))",
+            "legendFormat": "5xx",
+            "refId": "A"
+          }
+        ],
+        "id": 4,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "title": "Timeouts",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(partner_timeouts_total{partner=\"index-exchange\"}[5m]))",
+            "legendFormat": "timeouts",
+            "refId": "A"
+          }
+        ],
+        "id": 5,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "title": "System Load",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "targets": [
+          {
+            "expr": "partner_system_load{partner=\"index-exchange\"}",
+            "legendFormat": "load",
+            "refId": "A"
+          }
+        ],
+        "id": 6,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    }
+  }
+}
