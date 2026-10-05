@@ -367,6 +367,7 @@
         <label for="request_text">Onboarding request</label>
         <textarea id="request_text" name="request_text" required placeholder="Onboard DSP Moloco, track latency and 5XX, alert if p95 > 120ms.">{{ result.request_text if result else "" }}</textarea>
         <div class="example">e.g. "Onboard SSP PubMatic, track QPS and timeouts."</div>
+        <div class="example">Must mention SSP or DSP, plus at least one metric (or say "standard monitoring").</div>
         <div class="form-footer">
           <span class="hint">Opens a PR &mdash; nothing deploys without your review.</span>
           <button type="submit">Generate dashboard</button>

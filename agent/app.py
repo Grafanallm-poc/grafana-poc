@@ -22,7 +22,7 @@ from agent.dashboard_renderer import render_dashboard
 from agent.github_pr import GitHubPRError, open_dashboard_pr
 from agent.llm.spec_extractor import extract_spec
 from agent.observability import ONBOARD_DURATION, ONBOARD_REQUESTS
-from agent.validator import validate_dashboard
+from agent.validator import validate_dashboard, validate_request_text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("agent.app")
@@ -40,6 +40,13 @@ def index(request: Request):
 def onboard(request: Request, request_text: str = Form(...)):
     start = time.monotonic()
     result = {"request_text": request_text, "ok": False, "errors": [], "spec": None, "pr_url": None}
+
+    guardrail = validate_request_text(request_text)
+    if not guardrail.ok:
+        ONBOARD_REQUESTS.labels(result="request_invalid").inc()
+        result["errors"] = guardrail.errors
+        ONBOARD_DURATION.observe(time.monotonic() - start)
+        return templates.TemplateResponse(request, "index.html", {"result": result})
 
     try:
         spec = extract_spec(request_text)
