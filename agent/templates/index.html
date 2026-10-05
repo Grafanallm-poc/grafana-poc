@@ -375,6 +375,32 @@
       </form>
     </div>
 
+    {% if result %}
+      {% if result.ok %}
+        <div class="result ok">
+          <div class="result-head">&#10003; Dashboard validated and PR opened</div>
+          <div class="result-body">
+            <a href="{{ result.pr_url }}" target="_blank">{{ result.pr_url }}</a>
+            <div class="section-label">Extracted spec</div>
+            <pre>{{ result.spec | tojson(indent=2) }}</pre>
+          </div>
+        </div>
+      {% else %}
+        <div class="result err">
+          <div class="result-head">&#9888; Could not complete onboarding</div>
+          <div class="result-body">
+            <ul>
+              {% for e in result.errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+            {% if result.spec %}
+              <div class="section-label">Extracted spec</div>
+              <pre>{{ result.spec | tojson(indent=2) }}</pre>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+
     <div class="examples">
       <div class="section-label">Available dashboard types</div>
 
@@ -445,32 +471,6 @@
         </div>
       </div>
     </div>
-
-    {% if result %}
-      {% if result.ok %}
-        <div class="result ok">
-          <div class="result-head">&#10003; Dashboard validated and PR opened</div>
-          <div class="result-body">
-            <a href="{{ result.pr_url }}" target="_blank">{{ result.pr_url }}</a>
-            <div class="section-label">Extracted spec</div>
-            <pre>{{ result.spec | tojson(indent=2) }}</pre>
-          </div>
-        </div>
-      {% else %}
-        <div class="result err">
-          <div class="result-head">&#9888; Could not complete onboarding</div>
-          <div class="result-body">
-            <ul>
-              {% for e in result.errors %}<li>{{ e }}</li>{% endfor %}
-            </ul>
-            {% if result.spec %}
-              <div class="section-label">Extracted spec</div>
-              <pre>{{ result.spec | tojson(indent=2) }}</pre>
-            {% endif %}
-          </div>
-        </div>
-      {% endif %}
-    {% endif %}
   </main>
 
   <script>
