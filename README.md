@@ -24,6 +24,7 @@ by Grafana Git Sync once merged.
   8. [Point Grafana's Git Sync at this repo](#8-point-grafanas-git-sync-at-this-repo)
   9. [Smoke-test everything](#9-smoke-test-everything)
 - [Supported dashboard metrics](#supported-dashboard-metrics)
+- [Guardrails](#guardrails)
 - [LLMOps](#llmops)
 - [Day-2 operations](#day-2-operations)
 - [Known limitations](#known-limitations)
@@ -262,6 +263,25 @@ business metrics are opt-in only, by explicit request.
 modify an existing one (e.g. "also track viewability for Adcolony") will fail when
 opening the PR, since it doesn't fetch the file's current Git `sha` or merge with the
 existing panel set. See the code comments in `agent/github_pr.py` if extending this.
+
+---
+
+## Guardrails
+
+- **Input guardrail** — every request must explicitly state SSP or DSP and name at
+  least one metric (or say "standard monitoring"); rejected before it reaches the
+  LLM, saving quota on requests that would fail anyway (`validate_request_text` in
+  `agent/validator.py`).
+- **Output guardrail** — the generated dashboard must be valid JSON with required
+  fields, syntactically sound queries, and every referenced metric present in the
+  approved catalog; anything that looks hallucinated is rejected before a PR opens
+  (`validate_dashboard` in `agent/validator.py`).
+- **Type guardrail** — DSP-only metrics (bid rate, win rate, etc.) can never be
+  applied to an SSP partner, and vice versa, enforced in the template regardless of
+  what the LLM extracts (`agent/dashboard_renderer.py`).
+- **Quality guardrail** — a CI eval gate blocks any prompt or model change that
+  lowers extraction accuracy or introduces hallucinated metrics, before it reaches
+  production (see [LLMOps](#llmops) below).
 
 ---
 
