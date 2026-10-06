@@ -5,7 +5,7 @@ hallucinated metrics (anything outside agent/metric_catalog.yaml). Exits non-zer
 accuracy drops below EVAL_MIN_SCORE or any hallucination is found, which is what
 .github/workflows/eval-gate.yml uses to block a bad prompt/model change from merging.
 
-Run locally:  OPENAI_API_KEY=... python -m evals.run_eval
+Run locally:  GEMINI_API_KEY=... python -m evals.run_eval
 """
 from __future__ import annotations
 

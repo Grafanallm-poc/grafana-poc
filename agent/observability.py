@@ -90,7 +90,7 @@ def traced_llm_call(*, name: str, model: str, prompt_version: str, input_text: s
 
     Usage:
         with traced_llm_call(...) as record:
-            response = call_openai(...)
+            response = call_gemini(...)
             record(output_text=response.text, prompt_tokens=.., completion_tokens=..)
     """
     start = time.monotonic()
