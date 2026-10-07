@@ -10,6 +10,8 @@ on:
       - "agent/schema.py"
       - "agent/metric_catalog.yaml"
       - "evals/**"
+      # candidates are unconfirmed — only promoted cases (testset.jsonl) gate merges
+      - "!evals/candidates/**"
 
 jobs:
   eval-gate:
