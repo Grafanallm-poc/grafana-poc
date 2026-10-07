@@ -1,0 +1,989 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "agent-health"
+  },
+  "spec": {
+    "title": "Onboarding Agent Health",
+    "description": "Self-monitoring for the Partner Onboarding Observability Agent: live PR outcomes (acceptance / edit / rejection), time-to-merge, cost per dashboard, guardrails, model fallback.",
+    "editable": true,
+    "graphTooltip": 1,
+    "tags": [
+      "agent-health",
+      "llmops"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "refresh": "1m",
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "type": "row",
+        "title": "Live quality \u2014 PR outcomes (all time)",
+        "collapsed": false,
+        "panels": [],
+        "id": 1,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "title": "Acceptance rate",
+        "type": "stat",
+        "description": "Share of closed agent PRs merged exactly as generated \u2014 the most honest live quality signal.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 0.5
+                },
+                {
+                  "color": "green",
+                  "value": 0.8
+                }
+              ]
+            },
+            "decimals": 1
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value",
+          "justifyMode": "center"
+        },
+        "targets": [
+          {
+            "expr": "sum(agent_prs{outcome=\"merged_unchanged\"}) / clamp_min(sum(agent_prs{outcome!=\"open\"}), 1)",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "id": 2,
+        "gridPos": {
+          "h": 5,
+          "w": 5,
+          "x": 0,
+          "y": 1
+        }
+      },
+      {
+        "title": "Edit rate",
+        "type": "stat",
+        "description": "Share of closed agent PRs a reviewer changed (dashboard JSON or spec block) before merging.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 0.2
+                },
+                {
+                  "color": "red",
+                  "value": 0.4
+                }
+              ]
+            },
+            "decimals": 1
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value",
+          "justifyMode": "center"
+        },
+        "targets": [
+          {
+            "expr": "sum(agent_prs{outcome=\"merged_edited\"}) / clamp_min(sum(agent_prs{outcome!=\"open\"}), 1)",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "id": 3,
+        "gridPos": {
+          "h": 5,
+          "w": 5,
+          "x": 5,
+          "y": 1
+        }
+      },
+      {
+        "title": "Rejection rate",
+        "type": "stat",
+        "description": "Share of closed agent PRs closed without merging.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 0.2
+                },
+                {
+                  "color": "red",
+                  "value": 0.4
+                }
+              ]
+            },
+            "decimals": 1
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value",
+          "justifyMode": "center"
+        },
+        "targets": [
+          {
+            "expr": "sum(agent_prs{outcome=\"closed_unmerged\"}) / clamp_min(sum(agent_prs{outcome!=\"open\"}), 1)",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "id": 4,
+        "gridPos": {
+          "h": 5,
+          "w": 5,
+          "x": 10,
+          "y": 1
+        }
+      },
+      {
+        "title": "Median time-to-merge",
+        "type": "stat",
+        "description": "p50 time from PR opened to merged (bucketed estimate).",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value",
+          "justifyMode": "center"
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, sum by (le) (agent_pr_time_to_merge_seconds_bucket))",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "id": 5,
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 15,
+          "y": 1
+        }
+      },
+      {
+        "title": "Cost per dashboard",
+        "type": "stat",
+        "description": "Average LLM cost per generated dashboard. Pulled from Langfuse per trace; falls back to the local token-based estimate.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "decimals": 5
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value",
+          "justifyMode": "center"
+        },
+        "targets": [
+          {
+            "expr": "sum(agent_dashboard_cost_usd_sum) / clamp_min(sum(agent_dashboard_cost_usd_count), 1)",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "id": 6,
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 18,
+          "y": 1
+        }
+      },
+      {
+        "title": "Open agent PRs",
+        "type": "stat",
+        "description": "Agent PRs awaiting review.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value",
+          "justifyMode": "center"
+        },
+        "targets": [
+          {
+            "expr": "sum(agent_prs{outcome=\"open\"})",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "id": 7,
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 21,
+          "y": 1
+        }
+      },
+      {
+        "title": "Outcomes by prompt version & model",
+        "type": "table",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "description": "Compare prompt versions / models on real usage, not just the eval set.",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
+        },
+        "transformations": [
+          {
+            "id": "labelsToFields",
+            "options": {}
+          },
+          {
+            "id": "groupingToMatrix",
+            "options": {
+              "columnField": "outcome",
+              "rowField": "prompt_version",
+              "valueField": "Value"
+            }
+          }
+        ],
+        "targets": [
+          {
+            "expr": "sum by (prompt_version, outcome) (agent_prs{prompt_version!=\"\"})",
+            "refId": "A",
+            "instant": true,
+            "format": "table"
+          }
+        ],
+        "id": 8,
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 6
+        }
+      },
+      {
+        "title": "Time-to-merge (p50 / p90)",
+        "type": "timeseries",
+        "description": "All-time time-to-merge quantiles; moves as PRs merge.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 2,
+              "showPoints": "never"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, sum by (le) (agent_pr_time_to_merge_seconds_bucket))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.9, sum by (le) (agent_pr_time_to_merge_seconds_bucket))",
+            "legendFormat": "p90",
+            "refId": "B"
+          }
+        ],
+        "id": 9,
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 6
+        }
+      },
+      {
+        "title": "PR outcomes over time",
+        "type": "timeseries",
+        "description": "Cumulative agent PRs per outcome.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 2,
+              "showPoints": "never",
+              "stacking": {
+                "mode": "normal",
+                "group": "A"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by (outcome) (agent_prs)",
+            "legendFormat": "{{outcome}}",
+            "refId": "A"
+          }
+        ],
+        "id": 10,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 13
+        }
+      },
+      {
+        "title": "Eval candidates from reviewer corrections",
+        "type": "timeseries",
+        "description": "Edited/closed PRs turned into candidate regression tests (evals/candidates/).",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 2,
+              "showPoints": "never"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by (source) (agent_eval_candidates)",
+            "legendFormat": "{{source}}",
+            "refId": "A"
+          }
+        ],
+        "id": 11,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 13
+        }
+      },
+      {
+        "type": "row",
+        "title": "Guardrails & failures",
+        "collapsed": false,
+        "panels": [],
+        "id": 12,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 21
+        }
+      },
+      {
+        "title": "Guardrail rejections & extraction failures (per hour)",
+        "type": "timeseries",
+        "description": "Requests stopped before a PR was opened.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 60,
+              "lineWidth": 1,
+              "showPoints": "never",
+              "stacking": {
+                "mode": "normal",
+                "group": "A"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(agent_onboard_requests_total{result=\"request_invalid\"}[1h]))",
+            "legendFormat": "input guardrail rejected",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(increase(agent_onboard_requests_total{result=\"dashboard_invalid\"}[1h]))",
+            "legendFormat": "output guardrail rejected",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(increase(agent_onboard_requests_total{result=\"spec_invalid\"}[1h]))",
+            "legendFormat": "extraction failed",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(increase(agent_onboard_requests_total{result=\"pr_failed\"}[1h]))",
+            "legendFormat": "PR creation failed",
+            "refId": "D"
+          }
+        ],
+        "id": 13,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 22
+        }
+      },
+      {
+        "title": "Onboarding requests by result",
+        "type": "timeseries",
+        "description": "Requests per minute, by pipeline outcome.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 2,
+              "showPoints": "never"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by (result) (rate(agent_onboard_requests_total[5m])) * 60",
+            "legendFormat": "{{result}}",
+            "refId": "A"
+          }
+        ],
+        "id": 14,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 22
+        }
+      },
+      {
+        "type": "row",
+        "title": "LLM \u2014 models, fallback, latency, cost",
+        "collapsed": false,
+        "panels": [],
+        "id": 15,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 30
+        }
+      },
+      {
+        "title": "Model calls by outcome",
+        "type": "timeseries",
+        "description": "Per-model call outcomes; quota_exhausted on the primary is what triggers the fallback.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 60,
+              "lineWidth": 1,
+              "showPoints": "never",
+              "stacking": {
+                "mode": "normal",
+                "group": "A"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by (model, outcome) (increase(agent_llm_model_calls_total[1h]))",
+            "legendFormat": "{{model}} \u00b7 {{outcome}}",
+            "refId": "A"
+          }
+        ],
+        "id": 16,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 31
+        }
+      },
+      {
+        "title": "Fallbacks",
+        "type": "timeseries",
+        "description": "Times extraction fell through to the next model.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 60,
+              "lineWidth": 1,
+              "showPoints": "never"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by (from_model, to_model, reason) (increase(agent_llm_fallback_total[1h]))",
+            "legendFormat": "{{from_model}} \u2192 {{to_model}} ({{reason}})",
+            "refId": "A"
+          }
+        ],
+        "id": 17,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 31
+        }
+      },
+      {
+        "title": "Latency",
+        "type": "timeseries",
+        "description": "End-to-end onboarding and LLM-call latency.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 2,
+              "showPoints": "never"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum by (le) (rate(agent_onboard_duration_seconds_bucket[5m])))",
+            "legendFormat": "end-to-end p95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum by (le) (rate(agent_llm_call_duration_seconds_bucket[5m])))",
+            "legendFormat": "LLM call p95",
+            "refId": "B"
+          }
+        ],
+        "id": 18,
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 39
+        }
+      },
+      {
+        "title": "Tokens per hour",
+        "type": "timeseries",
+        "description": "LLM tokens consumed.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 2,
+              "showPoints": "never"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by (direction) (increase(agent_llm_tokens_total[1h]))",
+            "legendFormat": "{{direction}}",
+            "refId": "A"
+          }
+        ],
+        "id": 19,
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 39
+        }
+      },
+      {
+        "title": "Cumulative LLM spend",
+        "type": "timeseries",
+        "description": "Total spend.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 2,
+              "showPoints": "never"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum(agent_dashboard_cost_usd_sum)",
+            "legendFormat": "per-dashboard total (Langfuse/estimate)",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(agent_llm_cost_usd_total)",
+            "legendFormat": "local estimate since restart",
+            "refId": "B"
+          }
+        ],
+        "id": 20,
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 39
+        }
+      },
+      {
+        "type": "row",
+        "title": "Plumbing",
+        "collapsed": false,
+        "panels": [],
+        "id": 21,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 47
+        }
+      },
+      {
+        "title": "GitHub webhook deliveries",
+        "type": "timeseries",
+        "description": "bad_signature means GITHUB_WEBHOOK_SECRET doesn't match the secret configured on the GitHub webhook.",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 60,
+              "lineWidth": 1,
+              "showPoints": "never"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by (event, result) (increase(agent_github_webhook_events_total[1h]))",
+            "legendFormat": "{{event}} \u00b7 {{result}}",
+            "refId": "A"
+          }
+        ],
+        "id": 22,
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 48
+        }
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    }
+  }
+}

@@ -58,7 +58,9 @@ services:
 
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
+      # Models are pinned in agent/llm/models.yaml; these are emergency overrides only.
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
+      GEMINI_FALLBACK_MODELS: ${GEMINI_FALLBACK_MODELS:-}
       GEMINI_PRICE_INPUT_PER_1M_USD: ${GEMINI_PRICE_INPUT_PER_1M_USD:-0.0}
       GEMINI_PRICE_OUTPUT_PER_1M_USD: ${GEMINI_PRICE_OUTPUT_PER_1M_USD:-0.0}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
@@ -68,6 +70,15 @@ services:
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://us.cloud.langfuse.com}
+      LANGFUSE_PROJECT_ID: ${LANGFUSE_PROJECT_ID:-}
+      # PR-outcome tracking / feedback loop
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      EVAL_CANDIDATE_MODE: ${EVAL_CANDIDATE_MODE:-pr}
+      AGENT_DATA_DIR: /data
+      AGENT_VERSION: ${AGENT_VERSION:-dev}
+
+    volumes:
+      - agent_data:/data
 
     depends_on:
       - prometheus
@@ -79,6 +90,7 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+  agent_data:
 
 
 networks:
