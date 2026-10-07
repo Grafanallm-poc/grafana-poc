@@ -1,0 +1,28 @@
+# Pinned LLM model configuration for spec extraction.
+#
+# This file lives under agent/llm/, so any change to it goes through the same
+# PR review + LLMOps eval gate (.github/workflows/eval-gate.yml) as a prompt change.
+#
+# Use exact, stable model IDs — never "-latest"/"-preview" aliases, which silently
+# move to a new model underneath you and break reproducibility (the extractor logs
+# a warning at startup if an alias-looking ID is configured).
+#
+# Order matters: the extractor tries `primary` first and falls through `fallbacks`
+# in order when a model is out of quota (429 RESOURCE_EXHAUSTED), unavailable after
+# retries (5xx), or not found (404). The model that actually served each request is
+# recorded in the lineage stamp (PR body + dashboard tags) and in Langfuse.
+#
+# Env overrides (optional, for emergencies — prefer editing this file via PR):
+#   GEMINI_MODEL            overrides primary
+#   GEMINI_FALLBACK_MODELS  comma-separated list, overrides fallbacks ("none" disables)
+primary: gemini-3.5-flash
+fallbacks:
+  # gemini-2.5-flash returns 404 "no longer available to new users" on this
+  # project (verified live) — gemini-3.1-flash-lite is confirmed working with a
+  # separate quota pool, so it actually serves as a real fallback instead of
+  # failing immediately once gemini-3.5-flash's daily quota is hit.
+  - gemini-3.1-flash-lite
+
+# Retries on the *same* model for transient 5xx before falling through.
+# 429s are never retried on the same model — an exhausted quota won't recover in seconds.
+max_attempts_per_model: 3

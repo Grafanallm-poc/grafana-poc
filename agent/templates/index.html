@@ -381,6 +381,14 @@
           <div class="result-head">&#10003; Dashboard validated and PR opened</div>
           <div class="result-body">
             <a href="{{ result.pr_url }}" target="_blank">{{ result.pr_url }}</a>
+            {% if result.lineage %}
+              <div class="section-label">Lineage</div>
+              <div>
+                Prompt <code>{{ result.lineage.prompt_version }}</code> &middot;
+                model <code>{{ result.lineage.model }}</code>{% if result.lineage.fallback_used %} (fallback){% endif %} &middot;
+                trace {% if result.lineage.trace_url %}<a href="{{ result.lineage.trace_url }}" target="_blank"><code>{{ result.lineage.trace_id[:12] }}</code></a>{% else %}<code>{{ result.lineage.trace_id[:12] }}</code>{% endif %}
+              </div>
+            {% endif %}
             <div class="section-label">Extracted spec</div>
             <pre>{{ result.spec | tojson(indent=2) }}</pre>
           </div>

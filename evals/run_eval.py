@@ -18,12 +18,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import yaml
 
-from agent.llm.spec_extractor import extract_spec  # noqa: E402
+from agent.llm.spec_extractor import MODEL_CONFIG, extract_spec  # noqa: E402
 
 TESTSET_PATH = Path(__file__).resolve().parent / "testset.jsonl"
 RESULTS_PATH = Path(__file__).resolve().parent / "results.json"
 CATALOG_PATH = Path(__file__).resolve().parent.parent / "agent" / "metric_catalog.yaml"
 MIN_SCORE = float(os.getenv("EVAL_MIN_SCORE", "0.8"))
+# Score one model at a time with fallback disabled, so a quota hit mid-run can't
+# silently swap in a different model. Defaults to the pinned primary; set
+# EVAL_MODEL=<fallback id> to gate the fallback model too.
+EVAL_MODEL = os.getenv("EVAL_MODEL") or MODEL_CONFIG["primary"]
 
 # Same catalog the validator enforces at PR time — a metric extracted here that
 # isn't a key in this file is, by definition, hallucinated.
@@ -68,7 +72,7 @@ def main() -> int:
     hallucinations: list[str] = []
 
     for case in cases:
-        spec = extract_spec(case["request"])
+        spec = extract_spec(case["request"], models=[EVAL_MODEL])
         actual = spec.model_dump(mode="json")
 
         for m in actual["metrics"]:
@@ -79,8 +83,11 @@ def main() -> int:
         results.append({"request": case["request"], "score": score, "actual": actual})
 
     avg_score = sum(r["score"] for r in results) / len(results)
-    RESULTS_PATH.write_text(json.dumps({"average_score": avg_score, "cases": results}, indent=2))
+    RESULTS_PATH.write_text(
+        json.dumps({"model": EVAL_MODEL, "average_score": avg_score, "cases": results}, indent=2)
+    )
 
+    print(f"Model: {EVAL_MODEL}")
     print(f"Eval cases: {len(results)}")
     for r in results:
         print(f"  [{r['score']:.2f}] {r['request']}")
