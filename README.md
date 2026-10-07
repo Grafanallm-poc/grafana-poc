@@ -26,6 +26,10 @@ by Grafana Git Sync once merged.
 - [Supported dashboard metrics](#supported-dashboard-metrics)
 - [Guardrails](#guardrails)
 - [LLMOps](#llmops)
+  - [Lineage stamping](#lineage-stamping)
+  - [Pinned models + fallback](#pinned-models--fallback)
+  - [PR-outcome tracking + agent health](#pr-outcome-tracking--agent-health)
+  - [Reviewer corrections become test cases](#reviewer-corrections-become-test-cases)
 - [Day-2 operations](#day-2-operations)
 - [Known limitations](#known-limitations)
 - [Grafana Assistant — why not just use that?](#grafana-assistant--why-not-just-use-that)
@@ -308,6 +312,85 @@ Run the eval suite locally:
 export GEMINI_API_KEY=...
 python -m evals.run_eval
 ```
+
+### Lineage stamping
+
+Every generated dashboard records where it came from — the original request, prompt
+version, model actually used (incl. fallback), Langfuse trace ID and agent version:
+
+- **Dashboard JSON** — `spec.description` carries the request/prompt/model/trace,
+  `spec.tags` gets `agent-generated`, `prompt:<v>`, `model:<id>`, and `spec.links` gets
+  a **"Langfuse trace …"** link: open the dashboard in Grafana, click it, land on the
+  exact LLM call.
+- **PR description** — a lineage table, an editable `agent-spec` JSON block, and a
+  hidden `<!-- agent-lineage:v1 … -->` marker that outcome tracking parses back.
+
+Set `LANGFUSE_PROJECT_ID` to build trace links without an API lookup (otherwise the
+SDK looks it up once). Code: `agent/lineage.py`.
+
+### Pinned models + fallback
+
+`agent/llm/models.yaml` pins the exact primary model and an ordered fallback list.
+Because it lives under `agent/llm/`, changing it triggers the eval gate. On
+`429 RESOURCE_EXHAUSTED` the extractor falls straight through to the next model (no
+pointless retries); on 5xx it retries the same model a few times first; 404 also
+falls through. Each request's lineage records which model served it, and
+`agent_llm_model_calls_total` / `agent_llm_fallback_total` show it in Grafana.
+The eval gate scores **one model with fallback disabled** (default: the primary);
+run `EVAL_MODEL=gemini-2.5-flash python -m evals.run_eval` to gate the fallback too.
+
+### PR-outcome tracking + agent health
+
+A GitHub webhook (`POST /webhooks/github`, HMAC-verified with
+`GITHUB_WEBHOOK_SECRET`) classifies every closed agent PR:
+
+| Outcome | Meaning |
+|---|---|
+| `merged_unchanged` | merged exactly as generated — the most honest quality signal |
+| `merged_edited` | a reviewer changed the dashboard JSON or the `agent-spec` block first |
+| `closed_unmerged` | closed without merging |
+
+Outcomes are kept in SQLite on the `agent_data` volume (survive restarts) and exposed
+on `/metrics` as `agent_prs{outcome,prompt_version,model}`,
+`agent_pr_time_to_merge_seconds` (histogram) and `agent_dashboard_cost_usd`
+(summary; cost per trace pulled from Langfuse's API, falling back to the local token
+estimate). `dashboards/agent-health.json` shows acceptance / edit / rejection rate,
+time-to-merge, cost per dashboard, per-prompt-version outcomes, guardrail rejections,
+extraction failures and model fallbacks.
+
+**Webhook setup:** repo → Settings → Webhooks → Add webhook → Payload URL
+`http://<host>:8000/webhooks/github`, content type `application/json`, secret =
+`GITHUB_WEBHOOK_SECRET`, events: *Pull requests*. The security group must allow
+GitHub's `hooks` IP ranges (`curl https://api.github.com/meta | jq .hooks`) on 8000.
+
+**Backfill** PRs closed before the webhook existed (older PRs without a lineage
+marker are reconstructed from their first commit):
+
+```bash
+docker exec onboarding-agent python -m scripts.backfill_pr_outcomes          # dry run
+docker exec onboarding-agent python -m scripts.backfill_pr_outcomes --apply
+```
+
+### Reviewer corrections become test cases
+
+When an agent PR is edited or closed, the webhook opens a PR (label
+`eval-candidate`) adding `evals/candidates/<slug>-pr<N>.json` with the original
+request, the extracted spec and the reviewer's corrected spec — taken from an edited
+`agent-spec` block if there is one, otherwise inferred from the merged dashboard
+(`agent/spec_inference.py` reverses the deterministic template). Layout-only edits
+that don't change the spec are recorded but don't produce a candidate.
+
+A person confirms the answer and promotes it:
+
+```bash
+python -m evals.promote_candidate --list
+python -m evals.promote_candidate evals/candidates/moloco-pr42.json
+```
+
+That appends it to `evals/testset.jsonl`; the eval gate then runs it on every
+prompt/model change. See `evals/candidates/README.md`.
+
+Unit tests for all of the above: `python -m pytest -q tests`.
 
 ---
 

@@ -6,6 +6,8 @@ COPY agent/requirements.txt ./agent/requirements.txt
 RUN pip install --no-cache-dir -r agent/requirements.txt
 
 COPY agent ./agent
+COPY evals ./evals
+COPY scripts ./scripts
 
 ENV PYTHONPATH=/srv
 

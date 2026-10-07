@@ -3,13 +3,17 @@ Langfuse tracing for every LLM call's cost/latency.
 
 Langfuse is intentionally best-effort: if LANGFUSE_PUBLIC_KEY/SECRET_KEY aren't
 set, tracing is skipped (logged once) so the POC still runs without an account.
+Every extraction still gets a trace ID either way (a locally generated one when
+Langfuse is off), so the lineage stamp on PRs/dashboards is always populated.
 """
 from __future__ import annotations
 
 import logging
 import os
 import time
+import uuid
 from contextlib import contextmanager, nullcontext
+from dataclasses import dataclass
 
 from prometheus_client import Counter, Histogram
 
@@ -20,7 +24,8 @@ logger = logging.getLogger("agent.observability")
 ONBOARD_REQUESTS = Counter(
     "agent_onboard_requests_total",
     "Partner onboarding requests handled by the agent",
-    ["result"],  # success | spec_invalid | dashboard_invalid | pr_failed
+    # success | request_invalid | spec_invalid | dashboard_invalid | pr_failed
+    ["result"],
 )
 
 ONBOARD_DURATION = Histogram(
@@ -44,7 +49,25 @@ LLM_TOKENS = Counter(
     ["direction"],  # prompt | completion
 )
 
-# Defaults to $0 (Gemini free tier); set these if you move GEMINI_MODEL to a paid tier.
+LLM_MODEL_CALLS = Counter(
+    "agent_llm_model_calls_total",
+    "LLM calls per model and outcome",
+    ["model", "outcome"],  # outcome: success | quota_exhausted | unavailable | not_found | error
+)
+
+LLM_FALLBACKS = Counter(
+    "agent_llm_fallback_total",
+    "Times extraction fell through from one model to the next",
+    ["from_model", "to_model", "reason"],
+)
+
+WEBHOOK_EVENTS = Counter(
+    "agent_github_webhook_events_total",
+    "GitHub webhook deliveries received",
+    ["event", "result"],  # result: processed | ignored | bad_signature | error
+)
+
+# Defaults to $0 (Gemini free tier); set these if you move to a paid tier.
 _PRICE_PROMPT_PER_1M = float(os.getenv("GEMINI_PRICE_INPUT_PER_1M_USD", "0.0"))
 _PRICE_COMPLETION_PER_1M = float(os.getenv("GEMINI_PRICE_OUTPUT_PER_1M_USD", "0.0"))
 
@@ -59,7 +82,7 @@ _langfuse_client = None
 _langfuse_checked = False
 
 
-def _get_langfuse():
+def get_langfuse():
     """Returns a Langfuse client (SDK v3+: get_client(), which reads
     LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY / LANGFUSE_BASE_URL from the
     environment) or None if credentials aren't configured. Note LANGFUSE_BASE_URL,
@@ -84,9 +107,64 @@ def _get_langfuse():
     return _langfuse_client
 
 
+def langfuse_trace_url(trace_id: str | None) -> str | None:
+    """Deep link to a trace in the Langfuse UI. Prefers LANGFUSE_PROJECT_ID (no API
+    call needed); otherwise asks the SDK, which looks the project ID up once."""
+    if not trace_id:
+        return None
+    base = os.getenv("LANGFUSE_BASE_URL", "").rstrip("/")
+    project_id = os.getenv("LANGFUSE_PROJECT_ID")
+    if base and project_id:
+        return f"{base}/project/{project_id}/traces/{trace_id}"
+    client = get_langfuse()
+    if client is None:
+        return None
+    try:
+        return client.get_trace_url(trace_id=trace_id)
+    except Exception:  # pragma: no cover
+        logger.exception("Could not build Langfuse trace URL")
+        return None
+
+
+@dataclass
+class TraceInfo:
+    trace_id: str
+    trace_url: str | None
+    langfuse_enabled: bool
+
+
+@contextmanager
+def extraction_trace(*, name: str, input_text: str, prompt_version: str):
+    """Root span for one onboarding extraction (which may contain several model
+    attempts when the fallback kicks in). Yields a TraceInfo whose trace_id is the
+    Langfuse trace ID when tracing is on, or a local UUID otherwise."""
+    client = get_langfuse()
+    if client is None:
+        yield TraceInfo(trace_id=uuid.uuid4().hex, trace_url=None, langfuse_enabled=False)
+        return
+
+    with client.start_as_current_observation(
+        as_type="span",
+        name=name,
+        input=input_text,
+        metadata={"prompt_version": prompt_version},
+    ) as span:
+        trace_id = getattr(span, "trace_id", None) or client.get_current_trace_id() or uuid.uuid4().hex
+        info = TraceInfo(trace_id=trace_id, trace_url=None, langfuse_enabled=True)
+        try:
+            yield info
+        finally:
+            try:
+                client.flush()
+            except Exception:  # pragma: no cover
+                logger.exception("Langfuse flush failed")
+    info.trace_url = langfuse_trace_url(info.trace_id)
+
+
 @contextmanager
 def traced_llm_call(*, name: str, model: str, prompt_version: str, input_text: str):
-    """Times an LLM call, records Prometheus metrics, and (best-effort) logs a Langfuse trace.
+    """Times one LLM call, records Prometheus metrics, and (best-effort) logs a
+    Langfuse generation (nested under the current extraction_trace, if any).
 
     Usage:
         with traced_llm_call(...) as record:
@@ -101,7 +179,7 @@ def traced_llm_call(*, name: str, model: str, prompt_version: str, input_text: s
         result["prompt_tokens"] = prompt_tokens
         result["completion_tokens"] = completion_tokens
 
-    client = _get_langfuse()
+    client = get_langfuse()
     span_cm = (
         client.start_as_current_observation(
             as_type="generation",
@@ -115,8 +193,12 @@ def traced_llm_call(*, name: str, model: str, prompt_version: str, input_text: s
     )
 
     with span_cm as generation:
+        error: BaseException | None = None
         try:
             yield record
+        except BaseException as exc:
+            error = exc
+            raise
         finally:
             duration = time.monotonic() - start
             LLM_CALL_DURATION.observe(duration)
@@ -130,10 +212,12 @@ def traced_llm_call(*, name: str, model: str, prompt_version: str, input_text: s
 
             if generation is not None:
                 try:
-                    generation.update(
-                        output=result.get("output_text"),
-                        usage_details={"input": prompt_tokens, "output": completion_tokens},
-                    )
-                    client.flush()
+                    if error is not None:
+                        generation.update(level="ERROR", status_message=str(error)[:500])
+                    else:
+                        generation.update(
+                            output=result.get("output_text"),
+                            usage_details={"input": prompt_tokens, "output": completion_tokens},
+                        )
                 except Exception:  # pragma: no cover - never let tracing break the agent
                     logger.exception("Langfuse trace update failed")
