@@ -17,7 +17,11 @@
 #   GEMINI_FALLBACK_MODELS  comma-separated list, overrides fallbacks ("none" disables)
 primary: gemini-3.5-flash
 fallbacks:
-  - gemini-2.5-flash
+  # gemini-2.5-flash returns 404 "no longer available to new users" on this
+  # project (verified live) — gemini-3.1-flash-lite is confirmed working with a
+  # separate quota pool, so it actually serves as a real fallback instead of
+  # failing immediately once gemini-3.5-flash's daily quota is hit.
+  - gemini-3.1-flash-lite
 
 # Retries on the *same* model for transient 5xx before falling through.
 # 429s are never retried on the same model — an exhausted quota won't recover in seconds.
