@@ -81,4 +81,4 @@ def test_model_config_env_overrides(monkeypatch):
     monkeypatch.setenv("GEMINI_MODEL", "")
     monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
     cfg = se.load_model_config()
-    assert cfg["primary"] == "gemini-3.5-flash" and cfg["fallbacks"] == ["gemini-2.5-flash"]
+    assert cfg["primary"] == "gemini-3.5-flash" and cfg["fallbacks"] == ["gemini-3.1-flash-lite"]
