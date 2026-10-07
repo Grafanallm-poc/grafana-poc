@@ -90,12 +90,21 @@ detection, consistent panel layouts, and a CI eval gate on prompt changes possib
 
 ```
 agent/                     the onboarding agent service (FastAPI)
-  app.py                   web form + /onboard endpoint + /metrics
+  app.py                   web form + /onboard + /webhooks/github + /metrics
   schema.py                PartnerSpec / Metric / Alert pydantic models
-  llm/spec_extractor.py    Gemini structured-output call
+  llm/
+    spec_extractor.py      Gemini structured-output call, pinned model + fallback chain
+    models.yaml            pinned primary model + ordered fallbacks (PR-reviewed)
   dashboard_renderer.py    PartnerSpec -> Grafana dashboard JSON (the "template")
+  spec_inference.py        reverses the template: dashboard JSON -> the spec that
+                           would have produced it (for reviewer-correction detection)
+  lineage.py               stamps request/prompt/model/trace into the dashboard JSON
+                           and PR body; encodes/parses the hidden lineage marker
+  pr_outcomes.py           GitHub webhook handler + outcome classification
+                           (merged_unchanged / merged_edited / closed_unmerged)
+  store.py                 SQLite persistence for PR lineage + outcomes (agent_data volume)
   validator.py             JSON/schema/query/metric-existence checks
-  github_pr.py             opens the GitHub PR
+  github_pr.py             opens the GitHub PR (now lineage-stamped)
   observability.py         Prometheus metrics + optional Langfuse tracing
   metric_catalog.yaml      ground-truth list of metrics the template may reference
   prompts/                 versioned system prompts (system_prompt.v1.md, v2.md, ...)
@@ -103,25 +112,32 @@ agent/                     the onboarding agent service (FastAPI)
 
 dashboards/                every dashboard, hand-built or agent-generated — this is
                            exactly what Grafana's Git Sync watches
-  agent-health.json        the agent's own self-monitoring dashboard
+  agent-health.json        the agent's own self-monitoring + PR-outcome dashboard
 
 evals/
   testset.jsonl            sample requests + expected structured specs
   run_eval.py              scores extraction accuracy + hallucination rate
+  promote_candidate.py     promotes a reviewer-correction candidate into testset.jsonl
+  candidates/              auto-opened PRs with unconfirmed reviewer corrections,
+                           awaiting a human to promote or discard them
 
 tools/dummy_exporter/      demo-only synthetic traffic generator (no real SSP/DSP
                            traffic exists in this POC, so this fakes it)
 
+scripts/
+  rotate-gemini-key.sh     rotates GEMINI_API_KEY across EC2 + GitHub secret
+  backfill_pr_outcomes.py  reconstructs outcomes for PRs closed before the webhook existed
+
+tests/                     unit tests for lineage, PR outcomes, fallback, spec inference
+
 docker/
-  docker-compose.yaml      prometheus + grafana + agent + dummy-exporter
+  docker-compose.yaml      prometheus + grafana + agent (+ agent_data volume) + dummy-exporter
   prometheus/prometheus.yml
   grafana-provisioning/datasources/prometheus.yaml   auto-provisions the datasource
 
-scripts/rotate-gemini-key.sh   rotates GEMINI_API_KEY across EC2 + GitHub secret
-
 .github/workflows/
   validate-dashboards.yml  JSON-syntax-checks every dashboard on PR
-  eval-gate.yml            runs evals/run_eval.py on prompt/schema PRs
+  eval-gate.yml            runs evals/run_eval.py on prompt/schema/model PRs
   CODEOWNERS               requires review on dashboards/ changes
 ```
 
@@ -337,7 +353,7 @@ pointless retries); on 5xx it retries the same model a few times first; 404 also
 falls through. Each request's lineage records which model served it, and
 `agent_llm_model_calls_total` / `agent_llm_fallback_total` show it in Grafana.
 The eval gate scores **one model with fallback disabled** (default: the primary);
-run `EVAL_MODEL=gemini-2.5-flash python -m evals.run_eval` to gate the fallback too.
+run `EVAL_MODEL=gemini-3.1-flash-lite python -m evals.run_eval` to gate the fallback too.
 
 ### PR-outcome tracking + agent health
 
