@@ -1,0 +1,39 @@
+{
+  "status": "needs_review",
+  "request": "Onboard DSP Liftoff, track latency and 5XX, alert if p95 > 120ms",
+  "extracted": {
+    "partner_name": "Liftoff",
+    "partner_type": "DSP",
+    "metrics": [
+      "latency",
+      "error_5xx"
+    ],
+    "alerts": [
+      {
+        "metric": "latency",
+        "aggregation": "p95",
+        "operator": ">",
+        "threshold": 120.0,
+        "unit": "ms"
+      }
+    ]
+  },
+  "corrected": null,
+  "correction_source": null,
+  "diff": [],
+  "notes": [],
+  "source": {
+    "pr_number": 43,
+    "pr_url": "https://github.com/Grafanallm-poc/grafana-poc/pull/43",
+    "outcome": "closed_unmerged",
+    "closed_at": "2026-10-08T09:12:30Z",
+    "closed_by": null
+  },
+  "lineage": {
+    "prompt_version": "v2",
+    "model": "gemini-3.5-flash",
+    "trace_id": "ddc9c192743c668a1f90461585cbf723",
+    "trace_url": "https://us.cloud.langfuse.com/project/cmutf9fun09kdad0ceey757vl/traces/ddc9c192743c668a1f90461585cbf723"
+  },
+  "instructions": "Confirm `corrected` is the right answer for `request` (fill it in if null \u2014 e.g. the PR was closed without a fix), then run `python -m evals.promote_candidate <this file>` to add it to evals/testset.jsonl."
+}
